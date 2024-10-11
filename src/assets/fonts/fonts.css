@@ -1,0 +1,49 @@
+@font-face {
+  font-family: 'MonserratBlack';
+  font-style: normal;
+  src: url('Montserrat-Black.ttf');
+  src: local('MonserratBlack'), url('Montserrat-Black.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'MonserratBold';
+  font-style: normal;
+  src: url('Montserrat-Bold.ttf');
+  src: local('MonserratBold'), url('Montserrat-Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'StaatlichesRegular';
+  font-style: normal;
+  src: url('Staatliches-Regular.ttf');
+  src: local('StaatlichesRegular'), url('Staatliches-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'MonserratExtraBold';
+  font-style: normal;
+  src: url('Montserrat-ExtraBold.ttf');
+  src: local('MonserratExtraBold'), url('Montserrat-ExtraBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'MonserratSemiBold';
+  font-style: normal;
+  src: url('Montserrat-SemiBold.ttf');
+  src: local('MonserratSemiBold'), url('Montserrat-SemiBold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'MonserratMedium';
+  font-style: normal;
+  src: url('Montserrat-Medium.ttf');
+  src: local('MonserratMedium'), url('Montserrat-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'MonserratLight';
+  font-style: normal;
+  src: url('Montserrat-Light.ttf');
+  src: local('MonserratLight'), url('Montserrat-Light.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'StaatlichesRegular';
+  font-style: normal;
+  src: url('Staatliches-Regular.ttf');
+  src: local('StaatlichesRegular'), url('Staatliches-Regular.ttf') format('truetype');
+}
