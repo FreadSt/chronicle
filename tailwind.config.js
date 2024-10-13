@@ -11,6 +11,8 @@ module.exports = {
         'app-purple': 'var(--app-purple)',
         'app-black': 'var(--app-black)',
         'app-widget-dark': 'var(--app-widgets-bg)',
+        'app-grey': 'var(--app-grey)',
+
       },
       fontFamily: {
         'saatliches-regular': ['StaatlichesRegular', 'sans-serif'],
