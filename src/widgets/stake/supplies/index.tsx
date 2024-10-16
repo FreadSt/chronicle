@@ -2,7 +2,8 @@ import {FC} from "react";
 import {clsx} from "clsx";
 import styles from './style.module.scss';
 import {Button} from "../../../components/button/button";
-import {OVERVIEW_STATS, SUPPLIES_STATS} from "../../../lib/stakeConstants/constants";
+import {SUPPLIES_STATS} from "../../../lib/stakeConstants/constants";
+import {APYCalculator} from "../../../helpers/calculateAPY";
 
 export const Supplies: FC = () => {
 	return(
@@ -26,7 +27,7 @@ export const Supplies: FC = () => {
 								</aside>
 								<aside className="w-130px">
 									<span className="text-[12px] opacity-50">APY</span>
-									<p>{stat.APY}</p>
+									<p><APYCalculator /></p>
 								</aside>
 								<aside className="w-130px">
 									<span className="text-[12px] opacity-50">Claimable reward</span>

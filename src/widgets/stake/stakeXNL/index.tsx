@@ -1,4 +1,4 @@
-import {FC} from "react";
+import {FC, useEffect, useState} from "react";
 import {clsx} from "clsx";
 import styles from './style.module.scss';
 import {Button} from "../../../components/button/button";
@@ -7,6 +7,10 @@ import xnl from '../../../assets/images/stake/xnl-logo.svg';
 import thor from '../../../assets/images/stake/thor.svg';
 import info from '../../../assets/images/stake/circle-info.svg';
 import arr from '../../../assets/images/stake/Chevron Down.svg';
+import * as web3 from "web3";
+import {ethers} from "ethers";
+import {sepXNLTokenAddress} from "../../../lib/stakeConstants/globalConsts";
+import {APYCalculator} from "../../../helpers/calculateAPY";
 
 const tabs = [
 	{
@@ -54,7 +58,7 @@ const tabs = [
 								<span className="flex items-center text-[12px] opacity-50">APY</span>
 								<img src={info} alt=""/>
 							</div>
-							<p>12%</p>
+							<p><APYCalculator /></p>
 						</aside>
 					</div>
 
@@ -93,7 +97,6 @@ const tabs = [
 			</div>,
 	},
 ];
-
 
 export const StakeXNL: FC = () => {
 	return (

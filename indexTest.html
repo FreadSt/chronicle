@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XNL Staking DApp</title>
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #FFFFFF;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .input-group input {
+            margin-right: 10px;
+            padding: 5px;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #5e5e5e;
+            border: none;
+            color: #FFFFFF;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #777777;
+        }
+    </style>
+</head>
+<body id="rootTest">
+    <h1>XNL Staking on Sepolia</h1>
+    <p>This staking page allows users to stake sepXNL and farm ERC-20 reward tokens. Users can unstake at any time.</p>
+    <p>Pro tip: Swap your ERC-20 rewards for sepXNL on Uniswap and restake to increase your staked supply.</p>
+
+    <button id="connectButton">Connect to MetaMask</button>
+    <p id="status"></p>
+
+   <hr>
+	<h1>Select Farming Pool</h1>
+   <select id="farmPoolSelect">
+        <option value="1">Farm #1: Stake sepXNL for sepUSD</option>
+        <option value="2">Farm #2: Stake sepXNL for wXNL</option>
+        <!-- Add more pools as needed -->
+    </select>
+   <hr>
+
+    <div>
+        <h3>Your Stake in Selected Farming Pool</h3>
+        <p id="stakedAmount">Staked: 0</p>
+
+        <div class="input-group">
+            <input type="text" id="stakeAmount" placeholder="Amount to Stake">
+            <button id="maxStakeButton">Max</button>
+            <button id="stakeButton">Stake Tokens</button>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="unstakeAmount" placeholder="Amount to Unstake">
+            <button id="maxUnstakeButton">Max</button>
+            <button id="unstakeButton">Unstake Tokens</button>
+        </div>
+
+        <p id="balanceAmount">Balance: 0 sepXNL</p>
+    </div>
+
+    <div>
+        <h3>Total Staked Amount</h3>
+        <p id="totalStakedAmount">Total Staked: 0 sepXNL</p>
+        <p id="apyAmount">APY: 0%</p> <!-- Display APY here -->
+    </div>
+
+    <div>
+        <h3>Current XNL Price</h3>
+        <p id="currentPrice">Price: $0.00</p> <!-- Display current price here -->
+    </div>
+
+    <div>
+        <h3>Your Rewards</h3>
+        <p id="rewardAmount">Rewards: 0</p>
+        <button id="claimButton">Claim Rewards</button>
+    </div>
+
+    <script>
+        let web3;
+        let userAccount;
+        let sepXNLToken;
+        let stakingContract;
+
+        const stakingAddress = '0xa3b1594b0fbf2158a9595a4ca48d09ef0cd7aa5c'; // New staking contract
+        const sepXNLTokenAddress = '0x0b17AF6054BAEf8afDEc85bAEFe858d0956dc9CB'; // sepXNL contract
+
+	const poolRewardDetails = {
+	    1: {
+	        name: "sepUSD",
+	        price: 1, // Assuming 1 sepUSD = $1
+	        dailyReward: 1_000, // Set daily reward for this pool as a whole number
+	        coinGeckoId: "tether", // CoinGecko ID for price fetching if needed
+	    },
+	    2: {
+	        name: "wXNL",
+	        price: null, // Price to be fetched from CoinGecko
+	        dailyReward: 25_000, // Set daily reward for this pool
+	        coinGeckoId: "chronicle", // CoinGecko ID for price fetching if needed
+	    },
+	};
+
+	const sepXNLABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "allowance",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "needed",
+				"type": "uint256"
+			}
+		],
+		"name": "ERC20InsufficientAllowance",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "balance",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "needed",
+				"type": "uint256"
+			}
+		],
+		"name": "ERC20InsufficientBalance",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "approver",
+				"type": "address"
+			}
+		],
+		"name": "ERC20InvalidApprover",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "receiver",
+				"type": "address"
+			}
+		],
+		"name": "ERC20InvalidReceiver",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			}
+		],
+		"name": "ERC20InvalidSender",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			}
+		],
+		"name": "ERC20InvalidSpender",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "transfer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			}
+		],
+		"name": "allowance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "decimals",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalSupply",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+	];
+  const stakingABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "contract IERC20",
+				"name": "_stakingToken",
+				"type": "address"
+			},
+			{
+				"internalType": "contract IERC20",
+				"name": "_rewardToken",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_dailyRewardAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "addPool",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "target",
+				"type": "address"
+			}
+		],
+		"name": "AddressEmptyCode",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "AddressInsufficientBalance",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			}
+		],
+		"name": "claimReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "FailedInnerCall",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "SafeERC20FailedOperation",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "previousOwner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "reward",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			}
+		],
+		"name": "RewardPaid",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_dailyRewardAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "setDailyRewardAmount",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "contract IERC20",
+				"name": "_rewardToken",
+				"type": "address"
+			}
+		],
+		"name": "setRewardToken",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "stake",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			}
+		],
+		"name": "Staked",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "unstake",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			}
+		],
+		"name": "Unstaked",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "earned",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "pools",
+		"outputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "stakingToken",
+				"type": "address"
+			},
+			{
+				"internalType": "contract IERC20",
+				"name": "rewardToken",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "rewardRate",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lastUpdateTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "rewardPerTokenStored",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalStaked",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "dailyRewardAmount",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "poolId",
+				"type": "uint256"
+			}
+		],
+		"name": "rewardPerToken",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "rewards",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "userRewardPerTokenPaid",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "userStaked",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+        ];
+
+
+
+
+        async function fetchCurrentXNLPrice() {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=chronicle&vs_currencies=usd');
+                const data = await response.json();
+                const price = data.chronicle.usd;
+                document.getElementById("currentPrice").innerText = `Price: $${price}`;
+                return price;
+            } catch (error) {
+                console.error("Error fetching price:", error);
+                return 0;
+            }
+        }
+
+	async function calculateAPY(totalStaked, dailyReward, rewardTokenPrice, stakedTokenPrice) {
+	    // Calculate daily rewards in dollar value
+	    const annualReward = dailyReward * rewardTokenPrice * 365; // Convert daily reward to annual
+	    const totalStakedValue = totalStaked * stakedTokenPrice; // Value of staked tokens in USD
+
+	    // Prevent division by zero
+	    if (totalStakedValue === 0) {
+	        document.getElementById("apyAmount").innerText = "APY: 0%";
+	        return;
+	    }
+
+	    const apy = (annualReward / totalStakedValue) * 100; // APY calculation
+	    document.getElementById("apyAmount").innerText = `APY: ${apy.toFixed(2)}%`;
+	}
+
+
+	async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    web3 = new Web3(window.ethereum);
+                    userAccount = (await web3.eth.getAccounts())[0];
+                    document.getElementById("status").innerText = `Connected: ${userAccount}`;
+                    // Initialize contracts based on the selected pool
+                    updateContracts();
+                    updateStakedAndRewards();
+                    updateUserBalance();
+		    fetchCurrentXNLPrice(); // Update the price of XNL
+                } catch (error) {
+                    console.error(error);
+                    document.getElementById("status").innerText = "Error connecting to MetaMask.";
+                }
+            } else {
+                document.getElementById("status").innerText = "Please install MetaMask.";
+            }
+        }
+
+
+        function updateContracts() {
+            const selectedPool = parseInt(document.getElementById("farmPoolSelect").value);
+            stakingContract = new web3.eth.Contract(stakingABI, stakingAddress);
+            sepXNLToken = new web3.eth.Contract(sepXNLABI, sepXNLTokenAddress);
+        }
+
+	async function updateStakedAndRewards() {
+	    try {
+	        const selectedPool = parseInt(document.getElementById("farmPoolSelect").value); // Convert to a number
+	        console.log(`Fetching data for pool ID: ${selectedPool}`);
+	        console.log(`User Account: ${userAccount}`);
+
+	        // Fetch the staked amount and rewards for the user
+	        const staked = await stakingContract.methods.userStaked(selectedPool, userAccount).call();
+	        const rewards = await stakingContract.methods.earned(selectedPool, userAccount).call();
+
+	        // Fetch the pool data to get the totalStaked value and reward token address
+	        const pool = await stakingContract.methods.pools(selectedPool).call();
+	        const totalStaked = pool.totalStaked; // Access totalStaked from the pool data
+
+	        const rewardTokenAddress = pool.rewardToken; // Get the reward token address
+	        const rewardToken = new web3.eth.Contract(sepXNLABI, rewardTokenAddress); // Create contract for reward token
+
+	        // Fetch the reward token name or symbol (optional)
+	        const rewardTokenSymbol = await rewardToken.methods.symbol().call();
+
+	        // Fetch the daily reward for the selected pool
+	        const dailyReward = poolRewardDetails[selectedPool].dailyReward; // Get the daily reward for the selected pool
+
+	        // Fetch the prices for both tokens
+	        let rewardTokenPrice = poolRewardDetails[selectedPool].price; // Default price for reward token
+	        if (poolRewardDetails[selectedPool].coinGeckoId) {
+	            rewardTokenPrice = await fetchRewardTokenPrice(poolRewardDetails[selectedPool].coinGeckoId);
+	        }
+
+	        // Fetch the price of the staked token (XNL)
+	        const stakedTokenPrice = await fetchRewardTokenPrice('chronicle'); // Assuming 'chronicle' is the CoinGecko ID for XNL
+
+	        // Display the fetched data
+	        document.getElementById("stakedAmount").innerText = `Staked: ${web3.utils.fromWei(staked)} sepXNL`;
+	        document.getElementById("rewardAmount").innerText = `Rewards: ${web3.utils.fromWei(rewards)} ${rewardTokenSymbol}`; // Use the symbol
+	        document.getElementById("totalStakedAmount").innerText = `Total Staked: ${web3.utils.fromWei(totalStaked)} sepXNL`;
+
+	        // Calculate and display the APY
+	        calculateAPY(parseFloat(web3.utils.fromWei(totalStaked)), dailyReward, rewardTokenPrice, stakedTokenPrice);
+	    } catch (error) {
+	        console.error("Error fetching data:", error);
+	    }
+	}
+
+	// Helper function to fetch the price of the reward token from CoinGecko
+	async function fetchRewardTokenPrice(coinGeckoId) {
+	    try {
+	        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinGeckoId}&vs_currencies=usd`);
+	        const data = await response.json();
+	        return data[coinGeckoId].usd; // Adjust based on response structure
+	    } catch (error) {
+	        console.error("Error fetching reward token price:", error);
+	        return 0; // Fallback if there's an error
+	    }
+	}
+
+        async function updateUserBalance() {
+            try {
+                const balance = await sepXNLToken.methods.balanceOf(userAccount).call();
+                document.getElementById("balanceAmount").innerText = `Balance: ${web3.utils.fromWei(balance)} sepXNL`;
+            } catch (error) {
+                console.error("Error fetching balance:", error);
+            }
+        }
+
+	async function stakeTokens() {
+	    const amountToStake = document.getElementById("stakeAmount").value;
+	    const amountInWei = web3.utils.toWei(amountToStake);
+	    const selectedPool = parseInt(document.getElementById("farmPoolSelect").value); // Convert to a number
+
+	    try {
+	        // Check the current allowance
+	        const allowance = await sepXNLToken.methods.allowance(userAccount, stakingAddress).call();
+
+	        if (parseFloat(allowance) < parseFloat(amountInWei)) {
+	            // If allowance is not enough, ask for approval
+	            await sepXNLToken.methods.approve(stakingAddress, amountInWei).send({ from: userAccount });
+	            alert(`Approved ${amountToStake} sepXNL for staking.`);
+	        }
+
+	        // Now stake the tokens
+	        await stakingContract.methods.stake(selectedPool, amountInWei).send({ from: userAccount });
+	        updateStakedAndRewards();
+	        updateUserBalance();
+	    } catch (error) {
+	        console.error("Staking failed:", error);
+	    }
+	}
+
+        async function unstakeTokens() {
+            const amountToUnstake = document.getElementById("unstakeAmount").value;
+            const amountInWei = web3.utils.toWei(amountToUnstake);
+            const selectedPool = parseInt(document.getElementById("farmPoolSelect").value);
+
+            try {
+                await stakingContract.methods.unstake(selectedPool, amountInWei).send({ from: userAccount });
+                updateStakedAndRewards();
+                updateUserBalance();
+            } catch (error) {
+                console.error("Unstaking failed:", error);
+            }
+        }
+
+        async function claimRewards() {
+            const selectedPool = parseInt(document.getElementById("farmPoolSelect").value);
+
+            try {
+                await stakingContract.methods.claimReward(selectedPool).send({ from: userAccount });
+                updateStakedAndRewards();
+                updateUserBalance();
+            } catch (error) {
+                console.error("Claiming rewards failed:", error);
+            }
+        }
+
+        document.getElementById("connectButton").addEventListener("click", connectWallet);
+        document.getElementById("stakeButton").addEventListener("click", stakeTokens);
+        document.getElementById("unstakeButton").addEventListener("click", unstakeTokens);
+        document.getElementById("claimButton").addEventListener("click", claimRewards);
+
+        // Max button functionality
+	document.getElementById("maxStakeButton").addEventListener("click", async () => {
+	    const balance = await sepXNLToken.methods.balanceOf(userAccount).call();
+	    document.getElementById("stakeAmount").value = web3.utils.fromWei(balance);
+	});
+
+
+	document.getElementById("maxUnstakeButton").addEventListener("click", async () => {
+	    const selectedPool = parseInt(document.getElementById("farmPoolSelect").value); // Convert to a number
+	    const staked = await stakingContract.methods.userStaked(selectedPool, userAccount).call();
+	    document.getElementById("unstakeAmount").value = web3.utils.fromWei(staked);
+	});
+
+	// Update balances when a new pool is selected from the drop down menu
+	document.getElementById("farmPoolSelect").addEventListener("change", () => {
+	    updateContracts(); // Update contracts based on the selected pool
+	    fetchCurrentXNLPrice(); // Update the price of XNL
+	    updateStakedAndRewards(); // Update staked amounts and rewards
+	});
+
+        // Update staked amount and rewards every 30 seconds
+        setInterval(() => {
+	    fetchCurrentXNLPrice(); // Update the price of XNL
+            updateStakedAndRewards();
+            updateUserBalance();
+        }, 30000);
+    </script>
+</body>
+</html>
