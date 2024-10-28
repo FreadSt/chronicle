@@ -1,3 +1,21 @@
 .title{
   text-decoration: underline;
 }
+header{
+  button{
+    background: var(--app-purple) !important;
+    border-radius: 0!important;
+    font-family: MonserratSemiBold, 'sans-serif' !important;
+  }
+}
+.iekbcc0.ju367va.ju367v1s{
+}
+
+
+@media(max-width: 430px) {
+  header{
+    div{
+      display: none!important;
+    }
+  }
+}

@@ -10,20 +10,20 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
-  <Provider store={store}>
-    <React.StrictMode>
-      <MetaMaskProvider
-        debug={false}
-        sdkOptions={{
-          dappMetadata: {
-            name: "Chronicle",
-            url: window.location.href,
-          },
-          infuraAPIKey: process.env.INFURA_API_KEY,
-        }}
-      >
-        <App />
-      </MetaMaskProvider>
-    </React.StrictMode>
-  </Provider>
+    <Provider store={store}>
+      <React.StrictMode>
+        <MetaMaskProvider
+          debug={false}
+          sdkOptions={{
+            dappMetadata: {
+              name: "Chronicle",
+              url: window.location.href,
+            },
+            infuraAPIKey: process.env.INFURA_API_KEY,
+          }}
+        >
+          <App />
+        </MetaMaskProvider>
+      </React.StrictMode>
+    </Provider>
 );
