@@ -10,7 +10,6 @@ import {mainnet} from "wagmi/chains";
 import { RainbowKitProvider, getDefaultConfig } from '@rainbow-me/rainbowkit'
 
 import '@rainbow-me/rainbowkit/styles.css'
-import {MobileStake} from "../widgets/stake/mobileStake";
 
 const config = getDefaultConfig({
   appName: 'Chronicle',
