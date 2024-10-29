@@ -7,11 +7,9 @@ import {clsx} from "clsx";
 import styles from './style.module.scss';
 import {CustomDropdown} from "../../../components/customDropdown/dropdown";
 import xnl from '../../../assets/images/stake/xnl-logo.svg';
-import usdc from "../../../assets/images/stake/thor.svg"
 import {OVERVIEW_STATS} from "../../../lib/stakeConstants/constants";
 import Tabs from "../../../components/tabs/tabs";
 import info from "../../../assets/images/stake/circle-info.svg";
-
 
 export const TestStake: FC = () => {
 
@@ -106,7 +104,7 @@ export const TestStake: FC = () => {
 					rewardTokenPrice = await fetchRewardTokenPrice(poolRewardDetails[selectedPool].coinGeckoId);
 				}
 				const stakedTokenPrice = await fetchRewardTokenPrice('chronicle');
-				setStakedAmount(`${web3.utils.fromWei(staked, 'ether')} sepXNL`);
+				setStakedAmount(`${web3.utils.fromWei(staked, 'ether')}`);
 				setRewardAmount(`${web3.utils.fromWei(rewards, 'ether')} ${rewardTokenSymbol}`);
 				setTotalStakedAmount(`${web3.utils.fromWei(totalStaked, 'ether')} sepXNL`);
 				calculateAPY(parseFloat(web3.utils.fromWei(totalStaked, 'ether')), dailyReward, rewardTokenPrice, stakedTokenPrice);
@@ -222,6 +220,7 @@ export const TestStake: FC = () => {
 			}
 		}
 	};
+
 	const tabs = [
 		{
 			label: "Stake",
@@ -242,13 +241,19 @@ export const TestStake: FC = () => {
 								<img src={xnl}/>
 								<p className="uppercase text-[16px]">XNL</p>
 							</aside>
-							<p>{stakedAmount}</p>
+							<input
+								type="text"
+								value={stakeInput}
+								onChange={(e) => setStakeInput(e.target.value)}
+								className="text-right w-[100px] bg-app-widget-dark"
+							/>
+							{/*<p>{stakedAmount}</p>*/}
 						</div>
 					</aside>
 
 					<aside className="w-full flex flex-col gap-[20px] bg-box-bg p-[20px]">
 
-						<div className="flex justify-between items-center">
+						<div className={clsx("flex justify-between items-center", styles.stakepool)}>
 							<aside className="flex flex-col">
 								<div className="flex flex-col gap-[10px]">
 									<span className="text-[12px] opacity-50">Staking pool</span>
@@ -280,7 +285,7 @@ export const TestStake: FC = () => {
 			content:
 				<div className="flex flex-col items-center justify-between gap-[20px]">
 					<aside className="w-full flex flex-col gap-[20px] bg-box-bg p-[20px]">
-						<div className="flex justify-between items-center">
+						<div className={clsx("flex justify-between items-center", styles.unstake)}>
 							<aside className="flex flex-col">
 								<div className="flex flex-col gap-[10px]">
 									<span className="text-[12px] opacity-50">Staking pool</span>
@@ -308,14 +313,14 @@ export const TestStake: FC = () => {
 	];
 
 	return (
-		<main className="flex gap-[20px] pt-[2.77rem]">
-			<div className="flex w-2/3 flex-col gap-[20px]">
+		<main className={clsx("flex gap-[20px] pt-[2.77rem]", styles.main)}>
+			<div className={clsx("flex w-2/3 flex-col gap-[20px]", styles.overview)}>
 				<article className="w-full bg-box-bg p-[20px] box-border text-[24px]">
 					<h3>Overview</h3>
 					<div className={clsx('my-[20px]', styles.line)}/>
-					<section className="flex">
+					<section className={clsx("flex", styles.statsoverview)}>
 						{OVERVIEW_STATS.map((stat, i) => (
-							<div key={i} className="w-[10.27rem] flex flex-col gap-[15px]">
+							<div key={i} className={clsx("w-[10.27rem] flex flex-col gap-[15px]", styles.statsoverviewMobile)}>
 						<span className="opacity-50 text-[12px]">
 							{stat}
 						</span>
@@ -338,15 +343,15 @@ export const TestStake: FC = () => {
 							<img src={xnl} alt="xnl"/>
 							<p>XNL</p>
 						</div>
-						<div>
+						<div className={styles.supplystat}>
 							<p className="opacity-50">My stake</p>
 							<h3>{totalStakedAmount}</h3>
 						</div>
-						<div>
+						<div className={styles.supplystat}>
 							<p className="opacity-50">APY</p>
 							<h3>{apy}</h3>
 						</div>
-						<div>
+						<div className={styles.supplystat}>
 							<p className="opacity-50">Claimable reward</p>
 							<h3>{rewardAmount}</h3>
 						</div>
@@ -356,7 +361,7 @@ export const TestStake: FC = () => {
 				<Button className="w-1/2 self-center" onClick={connectWallet}>Connect to metamask</Button>
 			</div>
 
-			<div className="flex flex-col w-1/3">
+			<div className={clsx("flex flex-col w-1/3", styles.stakexnl)}>
 				<article className="w-full bg-box-bg p-[20px] box-border text-[24px]">
 					<div className="flex items-center justify-between">
 						<h3>Stake XNL</h3>

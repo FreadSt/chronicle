@@ -6,7 +6,7 @@ import styles from "./layout.module.scss";
 import {TestStake} from "../widgets/stake/testStake";
 import { WagmiProvider, http } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import {mainnet} from "wagmi/chains";
+import {sepolia} from "wagmi/chains";
 import { RainbowKitProvider, getDefaultConfig } from '@rainbow-me/rainbowkit'
 
 import '@rainbow-me/rainbowkit/styles.css'
@@ -14,9 +14,9 @@ import '@rainbow-me/rainbowkit/styles.css'
 const config = getDefaultConfig({
   appName: 'Chronicle',
   projectId: 'YOUR_PROJECT_ID',
-  chains: [mainnet],
+  chains: [sepolia],
   transports: {
-    [mainnet.id]: http(),
+    [sepolia.id]: http(),
   },
 })
 

@@ -13,3 +13,64 @@
   background-color: var(--app-box-bg);
 }
 
+@media (max-width: 430px) {
+  .main{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    .overview{
+      width: 100%;
+      article{
+        .statsoverview{
+          flex-direction: column!important;
+          .statsoverviewMobile{
+            width: 100%;
+            align-items: center;
+            flex-direction: row;
+            justify-content: space-between;
+          }
+        }
+      }
+      .supplies{
+        section{
+          flex-direction: column;
+          background: var(--app-box-bg);
+          .supplystat{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+          }
+          button{
+            width: 100%;
+          }
+        }
+      }
+    }
+    .stakexnl{
+      width: 100%;
+      .stakepool{
+        align-items: center;
+        flex-direction: column;
+        display: flex;
+        gap: 10px;
+        aside{
+          width: 50%;
+          text-align: center;
+        }
+      }
+    }
+    .unstake{
+      flex-direction: column;
+      gap: 10px;
+      aside{
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+      }
+    }
+    .flex{
+      width: 100% !important;
+    }
+  }
+}
