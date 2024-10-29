@@ -13,6 +13,26 @@
   background-color: var(--app-box-bg);
 }
 
+.main{
+  .connectRainbow{
+    display: flex;
+    justify-content: center;
+    div{
+      display: flex;
+      width: 100%;
+      justify-content: center;
+      .iekbcc0, button{
+        width: 100% !important;
+        background: var(--app-purple) !important;
+        border-radius: 0!important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    }
+  }
+}
+
 @media (max-width: 430px) {
   .main{
     display: flex;

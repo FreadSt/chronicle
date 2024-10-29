@@ -10,8 +10,11 @@ import xnl from '../../../assets/images/stake/xnl-logo.svg';
 import {OVERVIEW_STATS} from "../../../lib/stakeConstants/constants";
 import Tabs from "../../../components/tabs/tabs";
 import info from "../../../assets/images/stake/circle-info.svg";
+import {ConnectButton} from "@rainbow-me/rainbowkit";
 
 export const TestStake: FC = () => {
+
+	const isMobile = window.innerWidth <= 430;
 
 	let { web3, userAccount, sepXNLToken, stakingContract } = useWeb3();
 
@@ -19,7 +22,7 @@ export const TestStake: FC = () => {
 	const userAccountRef = useRef<string | null>(userAccount);
 
 	const [stakedAmount, setStakedAmount] = useState<string>("0");
-	const [unstakedAmount, setUntakedAmount] = useState<string>("0");
+	const [unstakedAmount, setUnstakedAmount] = useState<string>("0");
 	const [rewardAmount, setRewardAmount] = useState<string>("0");
 	const [balanceAmount, setBalanceAmount] = useState<string>("0");
 	const [totalStakedAmount, setTotalStakedAmount] = useState<string>("0");
@@ -214,7 +217,7 @@ export const TestStake: FC = () => {
 		if(web3){
 			try {
 				const staked = await stakingContract.methods.userStaked(selectedPool, userAccount).call();
-				setUntakedAmount(web3.utils.fromWei(staked, 'ether'));
+				setUnstakedAmount(web3.utils.fromWei(staked, 'ether'));
 			} catch (error) {
 				console.error("Error fetching max unstake amount:", error);
 			}
@@ -226,7 +229,6 @@ export const TestStake: FC = () => {
 			label: "Stake",
 			content:
 				<div className="flex flex-col items-center justify-between gap-[20px]">
-
 					<aside className="w-full flex flex-col gap-[20px] bg-box-bg p-[20px]">
 						<div className="flex justify-between items-center">
 							<span className="text-[12px] opacity-50">Amount</span>
@@ -243,8 +245,8 @@ export const TestStake: FC = () => {
 							</aside>
 							<input
 								type="text"
-								value={stakeInput}
-								onChange={(e) => setStakeInput(e.target.value)}
+								value={stakedAmount}
+								onChange={(e) => setStakedAmount(e.target.value)}
 								className="text-right w-[100px] bg-app-widget-dark"
 							/>
 							{/*<p>{stakedAmount}</p>*/}
@@ -266,7 +268,7 @@ export const TestStake: FC = () => {
 							</aside>
 							<aside className="flex flex-col gap-[10px]">
 								<span className="text-[12px] opacity-50">XNL staked</span>
-								<p>{stakedAmount}</p>
+								<p className="text-[1.4rem]">{totalStakedAmount}</p>
 							</aside>
 							<aside className="flex flex-col items-center gap-[10px] justify-between">
 								<div className="flex items-center gap-[10px]">
@@ -302,7 +304,13 @@ export const TestStake: FC = () => {
 									<span className="flex items-center text-[12px] opacity-50">Balance: {balanceAmount}</span>
 									<Button onClick={handleMaxUnstake}>Max</Button>
 								</div>
-								<p className="text-end">0.00</p>
+								<input
+									type="text"
+									value={unstakedAmount}
+									onChange={(e) => setUnstakedAmount(e.target.value)}
+									className="text-right w-[100px] bg-app-widget-dark"
+								/>
+								{/*<p className="text-end">0.00</p>*/}
 							</aside>
 						</div>
 
@@ -314,6 +322,12 @@ export const TestStake: FC = () => {
 
 	return (
 		<main className={clsx("flex gap-[20px] pt-[2.77rem]", styles.main)}>
+			{
+				isMobile &&
+				<div className={styles.connectRainbow}>
+          <ConnectButton />
+				</div>
+			}
 			<div className={clsx("flex w-2/3 flex-col gap-[20px]", styles.overview)}>
 				<article className="w-full bg-box-bg p-[20px] box-border text-[24px]">
 					<h3>Overview</h3>
@@ -358,7 +372,6 @@ export const TestStake: FC = () => {
 						<Button onClick={claimRewards}>Claim</Button>
 					</section>
 				</div>
-				<Button className="w-1/2 self-center" onClick={connectWallet}>Connect to metamask</Button>
 			</div>
 
 			<div className={clsx("flex flex-col w-1/3", styles.stakexnl)}>
